@@ -1,0 +1,10 @@
+^C:\C_CPP_PROJECTS\PROJEKT_JPO\FPS_GLUT\CMAKELISTS.TXT
+setlocal
+C:\C_Cpp_projects\cmake-3.28.1-windows-x86_64\bin\cmake.exe -SC:/C_Cpp_projects/projekt_JPO/FPS_GLUT -BC:/C_Cpp_projects/projekt_JPO/FPS_GLUT/build --check-stamp-file C:/C_Cpp_projects/projekt_JPO/FPS_GLUT/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
