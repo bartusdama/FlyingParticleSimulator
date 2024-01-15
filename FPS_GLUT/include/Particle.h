@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <memory>
+
 class Particle
 {
 public:
@@ -14,8 +17,9 @@ public:
 	float GetCenterY(void) const { return fCenterY; };
 	void SetCenterX(float CenterX) { fCenterX = CenterX; };
 	void SetCenterY(float CenterY) { fCenterY = CenterY; };
-	void update(const Particle& otherParticle);
+	void update(const std::vector<std::unique_ptr<Particle>>& Particles);
 	bool checkCollision(const Particle& otherParticle) const;
+	virtual void Draw();
 	Particle(float centerX, float centerY, float speedX, float speedY, float size)
 		: fCenterX(centerX), fCenterY(centerY), fSpeedX(speedX), fSpeedY(speedY), fSize(size) {}
 };
@@ -27,7 +31,7 @@ private:
 
 public:
 	using Particle::Particle;
-	void DrawCircle();
+	void Draw() override;
 
 };
 
@@ -37,7 +41,7 @@ private:
 	const int fTriNumb = 6;
 
 public:
-	void DrawCircle();
+	void Draw() override;
 	using Circle::Circle;
 };
 
@@ -48,6 +52,6 @@ private:
 
 public:
 	using Particle::Particle;
-	void DrawSquare();
+	void Draw() override;
 
 };

@@ -1,9 +1,11 @@
 #include "Particle.h"
 #include <GL\glew.h>
 #include <GL\freeglut.h>
+#include <iostream>
 #include <cmath>
+#include <vector>
 
-void Particle::update(const Particle& otherParticle)
+void Particle::update(const std::vector<std::unique_ptr<Particle>>& Particles)
 {
     fCenterX += fSpeedX;
     fCenterY += fSpeedY;
@@ -17,13 +19,13 @@ void Particle::update(const Particle& otherParticle)
     // Sprawdz kolizje z prawa krawedzia
     if (fCenterX + fSize > 1.0) {
         fCenterX = 1.0 - fSize;
-        fSpeedX = -fSpeedX;  // Zmien kierunek ruchu
+        fSpeedX = - fSpeedX;  // Zmien kierunek ruchu
     }
 
     // Sprawdz kolizje z dolna krawedzia
     if (fCenterY - fSize < -1.0) {
         fCenterY = -1.0 + fSize;
-        fSpeedY = -fSpeedY;  // Zmien kierunek ruchu
+        fSpeedY = - fSpeedY;  // Zmien kierunek ruchu
     }
 
     // Sprawdz kolizje z gorna krawedzia
@@ -31,10 +33,14 @@ void Particle::update(const Particle& otherParticle)
         fCenterY = 1.0 - fSize;
         fSpeedY = -fSpeedY;
     }
-    if (checkCollision(otherParticle))
+    for (const auto& otherParticle : Particles)
     {
-        fSpeedX = -fSpeedX;
-        fSpeedY = fSpeedX;
+        if (otherParticle.get() != this && checkCollision(*otherParticle))
+        {
+            fSpeedX = -fSpeedX;
+            fSpeedY = -fSpeedY;
+            break;
+        }
     }
 }
 
@@ -46,7 +52,7 @@ bool Particle::checkCollision(const Particle& otherParticle) const
     return distance < sumOfRad;
 }
 
-void Circle::DrawCircle()
+void Circle::Draw()
 {
     glBegin(GL_TRIANGLE_FAN);
 
@@ -64,7 +70,7 @@ void Circle::DrawCircle()
     glEnd();
 }
 
-void Hexagon::DrawCircle()
+void Hexagon::Draw()
 {
     glBegin(GL_TRIANGLE_FAN);
 
@@ -82,7 +88,7 @@ void Hexagon::DrawCircle()
     glEnd();
 }
 
-void Square::DrawSquare()
+void Square::Draw()
 {
     glBegin(GL_QUADS);
     glVertex2f(fCenterX - fSize, fCenterY - fSize);
@@ -91,3 +97,5 @@ void Square::DrawSquare()
     glVertex2f(fCenterX - fSize, fCenterY + fSize);
     glEnd();
 }
+
+void Particle::Draw() {}

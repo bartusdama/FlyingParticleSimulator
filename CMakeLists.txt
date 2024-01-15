@@ -7,7 +7,11 @@ project( ${PROJECT_NAME} )
 
 
 find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
+find_package( GLUT REQUIRED )
+if( GLUT_FOUND )
+    include_directories( ${GLUT_INCLUDE_DIRECTORIES} )
+    target_link_libraries( FPS_GLUT ${GLUT_LIBRARIES} )
+endif()
 
 
 include_directories(${OPENGL_INCLUDE_DIRS} ${SOURCE_DIR}/Dependencies/freeglut/include ${SOURCE_DIR}/Dependencies/GLEW/include)
