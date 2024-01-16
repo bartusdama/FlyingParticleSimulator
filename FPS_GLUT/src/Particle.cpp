@@ -1,4 +1,4 @@
-#include "Particle.h"
+﻿#include "Particle.h"
 #include <GL\glew.h>
 #include <GL\freeglut.h>
 #include <iostream>
@@ -19,13 +19,13 @@ void Particle::update(const std::vector<std::unique_ptr<Particle>>& Particles)
     // Sprawdz kolizje z prawa krawedzia
     if (fCenterX + fSize > 1.0) {
         fCenterX = 1.0 - fSize;
-        fSpeedX = - fSpeedX;  // Zmien kierunek ruchu
+        fSpeedX = -fSpeedX;  // Zmien kierunek ruchu
     }
 
     // Sprawdz kolizje z dolna krawedzia
     if (fCenterY - fSize < -1.0) {
         fCenterY = -1.0 + fSize;
-        fSpeedY = - fSpeedY;  // Zmien kierunek ruchu
+        fSpeedY = -fSpeedY;  // Zmien kierunek ruchu
     }
 
     // Sprawdz kolizje z gorna krawedzia
@@ -37,16 +37,43 @@ void Particle::update(const std::vector<std::unique_ptr<Particle>>& Particles)
     {
         if (otherParticle.get() != this && checkCollision(*otherParticle))
         {
-            fSpeedX = -fSpeedX;
-            fSpeedY = -fSpeedY;
-            break;
+            float distance = std::sqrt(std::pow(fCenterX - otherParticle->fCenterX, 2) + std::pow(fCenterY - otherParticle->fCenterY, 2));
+            float sumRadii = fSize + otherParticle->fSize;
+
+            if (distance < sumRadii) {
+                // Obliczanie wektorów jednostkowych między środkami obiektów
+                float dx = otherParticle->fCenterX - fCenterX;
+                float dy = otherParticle->fCenterY - fCenterY;
+                float distanceNorm = std::sqrt(dx * dx + dy * dy);
+
+                if (distanceNorm > 0) {
+                    float nx = dx / distanceNorm;
+                    float ny = dy / distanceNorm;
+
+                    // Obliczanie prędkości względnej
+                    float relativeVelocityX = otherParticle->fSpeedX - fSpeedX;
+                    float relativeVelocityY = otherParticle->fSpeedY - fSpeedY;
+
+                    // Obliczanie iloczynu skalarnego prędkości względnej i wektora normalnego
+                    float dotProduct = relativeVelocityX * nx + relativeVelocityY * ny;
+
+                    // Obliczanie współczynnika impulsu
+                    float impulseCoeff = (2.0 * dotProduct) / (getMass() + otherParticle->getMass());
+
+                    // Aktualizacja prędkości obiektów po zderzeniu
+                    fSpeedX += impulseCoeff * otherParticle->getMass() * nx;
+                    fSpeedY += impulseCoeff * otherParticle->getMass() * ny;
+                    otherParticle->fSpeedX -= impulseCoeff * getMass() * nx;
+                    otherParticle->fSpeedY -= impulseCoeff * getMass() * ny;
+                }
+            }
         }
     }
 }
 
 bool Particle::checkCollision(const Particle& otherParticle) const
 {
-    float distance = 
+    float distance =
         std::sqrt((fCenterX - otherParticle.fCenterX) * (fCenterX - otherParticle.fCenterX) + (fCenterY - otherParticle.fCenterY) * (fCenterY - otherParticle.fCenterY));
     float sumOfRad = fSize + otherParticle.fSize;
     return distance < sumOfRad;
@@ -98,4 +125,11 @@ void Square::Draw()
     glEnd();
 }
 
-void Particle::Draw() {}
+void Triangle::Draw()
+{
+    glBegin(GL_TRIANGLES);
+    glVertex2f(fCenterX, fCenterY + fSize);
+    glVertex2f(fCenterX + fSize, fCenterY - fSize);
+    glVertex2f(fCenterX - fSize, fCenterY - fSize);
+    glEnd();
+}
