@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <set>
 
 class Particle
 {
@@ -15,6 +16,7 @@ public:
 	float fDensity = {};
 	float fCenterX;
 	float fCenterY;
+	std::set<std::pair<const Particle*, const Particle*>> collidedPairs;
 
 public:
 	float GetCenterX(void) const { return fCenterX; };

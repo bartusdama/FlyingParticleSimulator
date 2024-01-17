@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 
 void Particle::update(const std::vector<std::unique_ptr<Particle>>& Particles)
 {
@@ -35,7 +36,10 @@ void Particle::update(const std::vector<std::unique_ptr<Particle>>& Particles)
     }
     for (const auto& otherParticle : Particles)
     {
-        if (otherParticle.get() != this && checkCollision(*otherParticle))
+        auto particlePair = std::minmax(this, otherParticle.get());
+
+        if (otherParticle.get() != this && checkCollision(*otherParticle) &&
+            collidedPairs.find(std::make_pair(this, otherParticle.get())) == collidedPairs.end())
         {
             float distance = std::sqrt(std::pow(fCenterX - otherParticle->fCenterX, 2) + std::pow(fCenterY - otherParticle->fCenterY, 2));
             float sumRadii = fSize + otherParticle->fSize;
@@ -65,10 +69,14 @@ void Particle::update(const std::vector<std::unique_ptr<Particle>>& Particles)
                     fSpeedY += impulseCoeff * otherParticle->getMass() * ny;
                     otherParticle->fSpeedX -= impulseCoeff * getMass() * nx;
                     otherParticle->fSpeedY -= impulseCoeff * getMass() * ny;
+
+                    collidedPairs.insert(std::make_pair(this, otherParticle.get()));
                 }
             }
+            //else if()
         }
     }
+    collidedPairs.clear();
 }
 
 bool Particle::checkCollision(const Particle& otherParticle) const

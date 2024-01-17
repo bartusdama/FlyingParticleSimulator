@@ -1,52 +1,64 @@
-cmake_minimum_required( VERSION 3.6.2 )
+cmake_minimum_required( VERSION 3.28.1 )
 
-# For a new project it is sufficient to change only its name in the following line
-set( PROJECT_NAME FPS_GLUT )
-
-project( ${PROJECT_NAME} )
+project( FPS_GLUT )
 
 
-find_package(OpenGL REQUIRED)
-find_package( GLUT REQUIRED )
-if( GLUT_FOUND )
-    include_directories( ${GLUT_INCLUDE_DIRECTORIES} )
-    target_link_libraries( FPS_GLUT ${GLUT_LIBRARIES} )
+add_compile_options( -O3 )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17" )
+set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3" )
+set( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g" )
+
+add_executable(
+	FPS_GLUT
+	FPS_GLUT/src/main.cpp
+	FPS_GLUT/src/Particle.cpp
+	FPS_GLUT/src/Scene.cpp
+)
+
+#add_library(
+#        imgui
+#        imgui/imgui.cpp
+#        imgui/imgui_demo.cpp
+#        imgui/imgui_draw.cpp
+#        imgui/imgui_widgets.cpp
+#        imgui/examples/imgui_impl_opengl3.cpp
+#        imgui/examples/imgui_impl_sdl.cpp
+#)
+#target_link_libraries(PhysicPhysics imgui)
+#include_directories( imgui/ )
+#set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIMGUI_IMPL_OPENGL_LOADER_GLEW" )
+
+
+# opengl
+find_package ( OpenGL REQUIRED )
+if (OPENGL_FOUND )
+    target_link_libraries ( FPS_GLUT ${OPENGL_LIBRARY} )
+    target_link_libraries ( FPS_GLUT ${OPENGiL_gl_LIBRARY} )
+    target_link_libraries ( FPS_GLUT ${OPENGL_glu_LIBRARY} )
 endif()
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGL_SILENCE_DEPRECATION" )
 
 
-include_directories(${OPENGL_INCLUDE_DIRS} ${SOURCE_DIR}/Dependencies/freeglut/include ${SOURCE_DIR}/Dependencies/GLEW/include)
-link_libraries(${OPENGL_INCLUDE_LIBS} ${SOURCE_DIR}/Dependencies/freeglut/lib ${SOURCE_DIR}/Dependencies/GLEW/lib/Release/Win32)
+set(GLEW_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/Dependencies/GLEW/include/GL)
+set(GLEW_LIBRARIES ${CMAKE_SOURCE_DIR}/Dependencies/GLEW/lib/Release/Win32/glew32.lib)
 
-set( CMAKE_BUILD_TYPE Debug )
-#set( CMAKE_BUILD_TYPE Release )
+include_directories(${GLEW_INCLUDE_DIRS})
+target_link_libraries(FPS_GLUT ${GLEW_LIBRARIES})
 
-if( WIN32 )
-	set( CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /std:c++17 /Za /D_UNICODE /DUNICODE" )
-	set( CMAKE_CXX_FLAGS_DEBUG "/MDd /Zi /Ob0 /Od /RTC1 /std:c++17 /Za /D_UNICODE /DUNICODE" )
-	message( "Win settings chosen..." )
-elseif( ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" )
-	set( CMAKE_CXX_FLAGS "-std=c++17 -Wall" )
-	set( CMAKE_CXX_FLAGS_DEBUG "-g -std=c++17 -Wall" )
-	message( "Mac settings chosen..." )
-elseif( UNIX )
-	set( CMAKE_CXX_FLAGS "-std=c++17 -Wall" )
-	set( CMAKE_CXX_FLAGS_DEBUG "-g -std=c++17 -Wall" )
-	message( "Linux settings chosen..." )
-endif()
+# FreeGLUT Library
+include_directories ( "include" "src" )
+
+file ( GLOB SRC_FREEGLUTLIB "src/*.c" )
 
 
+add_library ( freeglut ${SRC_FREEGLUTLIB} ${DEF_FILE} )
 
-# Inform CMake where the header files are
-include_directories( FPS_GLUT/include )
-
-
-# Automatically add all *.cpp and *.h files to the project
-file ( GLOB SOURCES "./FPS_GLUT/src/*.cpp" "./FPS_GLUT/include/*.h" )
-add_executable( ${PROJECT_NAME} ${SOURCES} )
-
-
-# Set the default project 
-set_property( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME} )
-
-
-message( "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}" )
+if ( CYGWIN OR MSYS OR MINGW OR MSVC )
+  #ADD_DEFINITIONS(-mthreads -Wall -O2 -DNDEBUG -DWIN32 -D_MBCS -D_USRDLL -DFREEGLUT_EXPORTS)
+  add_definitions ( -DWIN32 -DFREEGLUT_EXPORTS )
+  target_link_libraries ( freeglut winmm user32 gdi32 ${OPENGL_LIBRARIES} )
+elseif ( UNIX )
+find_package ( X11 REQUIRED )
+include_directories ( ${X11_INCLUDE_DIR} )
+target_link_libraries ( freeglut ${OPENGL_LIBRARIES} ${X11_LIBRARIES} )
+endif ( )
