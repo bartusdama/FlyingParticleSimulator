@@ -10,7 +10,6 @@ void Particle::update(const std::vector<std::unique_ptr<Particle>>& Particles)
 {
     fCenterX += fSpeedX;
     fCenterY += fSpeedY;
-
     // Sprawdz kolizje z lewa krawedzia
     if (fCenterX - fSize < -1.0) {
         fCenterX = -1.0 + fSize;
@@ -53,6 +52,9 @@ void Particle::update(const std::vector<std::unique_ptr<Particle>>& Particles)
                 if (distanceNorm > 0) {
                     float nx = dx / distanceNorm;
                     float ny = dy / distanceNorm;
+                    float overlap = sumRadii - distance;
+                    float pushX = (overlap * dx) / distanceNorm;
+                    float pushY = (overlap * dy) / distanceNorm;
 
                     // Obliczanie prędkości względnej
                     float relativeVelocityX = otherParticle->fSpeedX - fSpeedX;
@@ -70,12 +72,18 @@ void Particle::update(const std::vector<std::unique_ptr<Particle>>& Particles)
                     otherParticle->fSpeedX -= impulseCoeff * getMass() * nx;
                     otherParticle->fSpeedY -= impulseCoeff * getMass() * ny;
 
+                    //Przesuwanie cząstek w wypadku nałożnia się dwóch obiektów na siebie
+                    fCenterX -= pushX / 2.0;
+                    fCenterY -= pushY / 2.0;
+                    otherParticle->fCenterX += pushX / 2.0;
+                    otherParticle->fCenterY += pushY / 2.0;
+
                     collidedPairs.insert(std::make_pair(this, otherParticle.get()));
                 }
             }
-            //else if()
         }
     }
+    updateColour();
     collidedPairs.clear();
 }
 
@@ -84,7 +92,30 @@ bool Particle::checkCollision(const Particle& otherParticle) const
     float distance =
         std::sqrt((fCenterX - otherParticle.fCenterX) * (fCenterX - otherParticle.fCenterX) + (fCenterY - otherParticle.fCenterY) * (fCenterY - otherParticle.fCenterY));
     float sumOfRad = fSize + otherParticle.fSize;
-    return distance < sumOfRad;
+    return distance <= sumOfRad;
+}
+
+bool Particle::timeToRemove() const
+{
+    auto currentTime = std::chrono::steady_clock::now();
+    auto timeValue = std::chrono::duration_cast<std::chrono::seconds>(currentTime - clockCounter);
+    return timeValue >= lifeTime;
+}
+
+void Particle::setColor(float r, float g, float b)
+{
+    color = {r, g, b};
+}
+
+void Particle::updateColour()
+{
+    auto currentTime = std::chrono::steady_clock::now();
+    auto timeValue = std::chrono::duration_cast<std::chrono::seconds>(currentTime - clockCounter).count();
+    float newRed = 0.0f + static_cast<float>(timeValue/40.0);
+    float newGreen = 1.0f - static_cast<float>(timeValue/40.0);
+    float newBlue = 0.0f;
+
+    setColor(newRed, newGreen, newBlue);
 }
 
 void Circle::Draw()
@@ -95,10 +126,11 @@ void Circle::Draw()
     glVertex2f(fCenterX, fCenterY);
 
     // Przyblizanie okregu za pomoca trojkatow
-    for (int i = 0; i <= fTriNumb; ++i) {
+    for (int i = 0; i <= fTriNumb; ++i) 
+    {
         float currentAngle = 2.0 * acos(-1.0) * i / fTriNumb;
-        float x = fCenterX + 0.1 * cos(currentAngle);
-        float y = fCenterY + 0.1 * sin(currentAngle);
+        float x = fCenterX + fSize * cos(currentAngle);
+        float y = fCenterY + fSize * sin(currentAngle);
         glVertex2f(x, y);
     }
 
@@ -115,8 +147,8 @@ void Hexagon::Draw()
     // Przyblizanie okregu za pomoca trojkatow
     for (int i = 0; i <= fTriNumb; ++i) {
         float currentAngle = 2.0 * acos(-1.0) * i / fTriNumb;
-        float x = fCenterX + 0.1 * cos(currentAngle);
-        float y = fCenterY + 0.1 * sin(currentAngle);
+        float x = fCenterX + fSize * cos(currentAngle);
+        float y = fCenterY + fSize * sin(currentAngle);
         glVertex2f(x, y);
     }
 

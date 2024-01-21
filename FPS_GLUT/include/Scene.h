@@ -18,3 +18,5 @@ void updateScene(int value);
 void Scene(int argc, char** argv);
 
 void guiInteraction();
+
+void addParticle(float centerX, float centerY, float size);

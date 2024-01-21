@@ -7,10 +7,18 @@
 
 std::vector<std::unique_ptr<Particle>> Particles_vec;
 
-void addParticle(float centerX, float centerY)
+enum ParticleType {
+    CIRCLE,
+    SQUARE,
+    HEXAGON,
+    TRIANGLE
+};
+ParticleType selectedType;
+
+
+void addParticle(float centerX, float centerY, float size)
 {
     bool freePlace = true;
-    float size = 0.1;
     for (const auto& particle : Particles_vec)
     {
         float distance = 
@@ -26,26 +34,32 @@ void addParticle(float centerX, float centerY)
     }
     if (freePlace == true)
     {
-        Triangle newCircle(centerX, centerY, 0.02f, 0.01f, size);
-        Particles_vec.push_back(std::make_unique<Triangle>(newCircle));
-    }
-}
+        std::unique_ptr<Particle> newParticle;
+        switch (selectedType)
+        {
+        case CIRCLE:
+            newParticle = std::make_unique<Circle>(centerX, centerY, 0.02f, 0.01f, size);
+            break;
+        case SQUARE:
+            newParticle = std::make_unique<Square>(centerX, centerY, 0.02f, 0.01f, size);
+            break;
+        case HEXAGON:
+            newParticle = std::make_unique<Hexagon>(centerX, centerY, 0.02f, 0.01f, size);
+            break;
+        case TRIANGLE:
+            newParticle = std::make_unique<Triangle>(centerX, centerY, 0.02f, 0.01f, size);
+            break;
+        default:
 
-void addParticleWithMouse(int button, int state, int x, int y)
-{
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-    {
-        float centerX = static_cast<float>(x) / glutGet(GLUT_WINDOW_WIDTH) * 2 - 1; // zakres (0;1)*2 -1 -> (-1;1)
-        float centerY = 1 - static_cast<float>(y) / glutGet(GLUT_WINDOW_HEIGHT) * 2; // odwraca i normalizuje zakres do (-1;1)
-        addParticle(centerX, centerY);
-
-        glutPostRedisplay();
+            break;
+        }
+        Particles_vec.push_back(std::move(newParticle));
     }
 }
 
 void init()
 {
-    glClearColor(0.0, 0.5, 0.5, 0.0);  // Czarny kolor tla
+    glClearColor(0.0, 0.0, 0.0, 0.0);  // Czarny kolor tla
     gluOrtho2D(-1.0, 1.0, -1.0, 1.0);  // Ustawienie ukladu wspolrzednych
 }
 
@@ -53,24 +67,71 @@ static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 void guiInteraction()
 {
-    static float f = 0.0f;
-    static int counter = 0;
+    static float size = 0.0f;
+    static int counter = -1;
+    static float centerX = 0.0f;
+    static float centerY = 0.0f;
 
-    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-    ImGui::Text("This is some useful text.");               // Display some text (you can use format strings too)
-
-    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f    
-    ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-    if (ImGui::Button("Button"))
+    if (ImGui::Begin("Control Panel"))
     {
-    }
-        
-    ImGui::SameLine();
-    ImGui::Text("counter = %d", counter);
+        ImGui::Text("Particle settings:");
 
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        if (ImGui::CollapsingHeader("Select a particle type"))
+        {
+            if (ImGui::Button("Circle"))
+            {
+                selectedType = CIRCLE;
+            }
+            if (ImGui::Button("Hexagon"))
+            {
+                selectedType = HEXAGON;
+            }
+            if (ImGui::Button("Square"))
+            {
+                selectedType = SQUARE;
+            }
+            if (ImGui::Button("Triangle"))
+            {
+                selectedType = TRIANGLE;
+            }
+
+        }
+
+        if (ImGui::CollapsingHeader("Set the particle size"))
+        {
+            ImGui::SliderFloat("Size:", &size, 0.0f, 0.5f);
+        }
+
+        if (ImGui::CollapsingHeader("Set the particle position (X, Y)"))
+        {
+            ImGui::SliderFloat("X:", &centerX, -0.5f, 0.5f);
+            ImGui::SliderFloat("Y:", &centerY, -0.5f, 0.5f);
+        }
+
+        if (ImGui::Button("Add particle"))
+        {
+            addParticle(centerX, centerY, size);
+        }
+
+        if (ImGui::Button("Reset"))
+        {
+            Particles_vec.clear();
+        }
+        ImGui::SameLine();
+        ImGui::Text("Remove all particles");
+
+        if (ImGui::Button("Quit"))
+        {
+            exit(0);
+        }
+
+        ImGui::Text("Number of particles = %d", Particles_vec.size());
+
+        if (ImGui::CollapsingHeader("Change the background color"))
+        {
+            ImGui::ColorEdit3("clear color", (float*)&clear_color);
+        }
+    }
     ImGui::End();
 }
 
@@ -78,20 +139,29 @@ void guiInteraction()
 void drawScene()
 {
     glClear(GL_COLOR_BUFFER_BIT);
-    glColor3f(0.2f, 0.8f, 0.1f);  // Zielony kolor
     for (const auto& particle : Particles_vec)
     {
+        glColor3f(particle->color.r, particle->color.g, particle->color.b);  // Zielony kolor
         particle->Draw();
     }
     glFlush();
-
 }
 
 void updateScene(int value) {
 
-    for (const auto& particle : Particles_vec)
+    for (auto it = Particles_vec.begin(); it != Particles_vec.end();)
     {
+        auto& particle = *it;
         particle->update(Particles_vec);
+
+        if (particle->timeToRemove())
+        {
+            it = Particles_vec.erase(it);
+        }
+        else 
+        {
+            ++it;
+        }
     }
 
     glutPostRedisplay();
@@ -133,7 +203,7 @@ void Scene(int argc, char** argv)
     glutInitWindowSize(800, 800);
     glutCreateWindow("Simulator");
 
-    //init();
+    init();
 
     ImGui::CreateContext();
 
@@ -144,8 +214,6 @@ void Scene(int argc, char** argv)
     glutDisplayFunc(display);
     glutIdleFunc(display);
     glutTimerFunc(16, updateScene, 0);
-    glutMouseFunc(addParticleWithMouse);
-
 
 
     glutMainLoop();

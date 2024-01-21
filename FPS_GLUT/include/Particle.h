@@ -5,6 +5,8 @@
 #include <memory>
 #include <iostream>
 #include <set>
+#include <chrono>
+
 
 class Particle
 {
@@ -17,6 +19,9 @@ public:
 	float fCenterX;
 	float fCenterY;
 	std::set<std::pair<const Particle*, const Particle*>> collidedPairs;
+
+	std::chrono::steady_clock::time_point clockCounter;
+	std::chrono::seconds lifeTime;
 
 public:
 	float GetCenterX(void) const { return fCenterX; };
@@ -33,14 +38,27 @@ public:
 
 	void update(const std::vector<std::unique_ptr<Particle>>& Particles);
 	bool checkCollision(const Particle& otherParticle) const;
+	bool timeToRemove() const;
+	void updateColour();
 
+
+	struct Colour
+	{
+		float r, g, b;
+	};
+	Colour color;
+	
+	void setColor(float r, float g, float b);
 	
 	Particle(float centerX, float centerY, float speedX, float speedY, float size)
-		: fCenterX(centerX), fCenterY(centerY), fSpeedX(speedX), fSpeedY(speedY), fSize(size) {}
+		: fCenterX(centerX), fCenterY(centerY), fSpeedX(speedX), fSpeedY(speedY), fSize(size), lifeTime(std::chrono::seconds(40))
+	{
+		clockCounter = std::chrono::steady_clock::now();
+	}
 };
 
 
-class Circle final : public Particle
+class Circle : public Particle
 {
 public:
 	float fDensity;
@@ -58,7 +76,7 @@ public:
 };
 
 
-class Triangle final : public Particle
+class Triangle : public Particle
 {
 public:
 	float fDensity;
@@ -75,7 +93,7 @@ public:
 };
 
 
-class Hexagon final : public Particle
+class Hexagon : public Particle
 {
 public:
 	float fDensity;
@@ -93,7 +111,7 @@ public:
 };
 
 
-class Square final : public Particle
+class Square : public Particle
 {
 public:
 	float fDensity;
